@@ -1,8 +1,9 @@
 package metrics
 
 import (
+	"LintVision/extensions"
 	"bufio"
-	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,24 +20,6 @@ type FileStats struct {
 
 type ProjectStats struct {
 	Files []FileStats `json:"files"`
-}
-
-var codeExts = map[string]bool{
-	".go":   true,
-	".py":   true,
-	".js":   true,
-	".java": true,
-	".c":    true,
-	".cpp":  true,
-	".h":    true,
-	".cs":   true,
-	".rb":   true,
-	".php":  true,
-	".ts":   true,
-	".txt":  true,
-	".md":   true,
-	".mod":  true,
-	".yml":  true,
 }
 
 func isCommentAfterCode(line, ext string) bool {
@@ -63,90 +46,103 @@ func isCommentAfterCode(line, ext string) bool {
 }
 
 func TraversePath(path string) (*ProjectStats, error) {
-	var stats ProjectStats
+	stats := &ProjectStats{}
 
-	err := filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
+	err := filepath.WalkDir(path, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		if info.IsDir() {
+		if d.IsDir() {
 			return nil
 		}
+
 		ext := filepath.Ext(p)
-		if !codeExts[ext] {
+		if !extensions.IsCodeExtension(ext) {
 			return nil
 		}
 
-		file, err := os.Open(p)
+		fileStats, err := processFile(p, ext)
 		if err != nil {
 			return err
 		}
-		defer func(file *os.File) {
-			err := file.Close()
-			if err != nil {
-				fmt.Printf("error closing file %s: %v\n", p, err)
-			}
-		}(file)
 
-		var total, blank, comments, code int
-		inBlockComment := false
-
-		scanner := bufio.NewScanner(file)
-		for scanner.Scan() {
-			line := strings.TrimSpace(scanner.Text())
-			total++
-
-			if line == "" {
-				blank++
-				continue
-			}
-
-			// Block comments /* ... */
-			if inBlockComment {
-				comments++
-				if strings.Contains(line, "*/") {
-					inBlockComment = false
-				}
-				continue
-			}
-			if strings.HasPrefix(line, "/*") {
-				comments++
-				if !strings.Contains(line, "*/") {
-					inBlockComment = true
-				}
-				continue
-			}
-
-			// Single-line comments
-			if strings.HasPrefix(line, "//") || (ext == ".py" && strings.HasPrefix(line, "#")) {
-				comments++
-				continue
-			}
-
-			// Inline comments after code
-			if isCommentAfterCode(line, ext) {
-				code++
-				comments++
-				continue
-			}
-
-			code++
-		}
-
-		stats.Files = append(stats.Files, FileStats{
-			Path:          p,
-			Ext:           ext,
-			LinesTotal:    total,
-			LinesCode:     code,
-			LinesComments: comments,
-			LinesBlank:    blank,
-		})
-
+		stats.Files = append(stats.Files, *fileStats)
 		return nil
 	})
 
 	if err != nil {
 		return nil, err
 	}
-	return &stats, nil
+	return stats, nil
+}
+
+func processFile(path string, ext string) (*FileStats, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
+
+	total, code, comments, blank := countLines(file, ext)
+
+	return &FileStats{
+		Path:          path,
+		Ext:           ext,
+		LinesTotal:    total,
+		LinesCode:     code,
+		LinesComments: comments,
+		LinesBlank:    blank,
+	}, nil
+}
+
+func countLines(file *os.File, ext string) (total, code, comments, blank int) {
+	scanner := bufio.NewScanner(file)
+	inBlockComment := false
+
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		total++
+
+		if line == "" {
+			blank++
+			continue
+		}
+
+		// Block comments /* ... */
+		if inBlockComment {
+			comments++
+			if strings.Contains(line, "*/") {
+				inBlockComment = false
+			}
+			continue
+		}
+		if strings.HasPrefix(line, "/*") {
+			comments++
+			if !strings.Contains(line, "*/") {
+				inBlockComment = true
+			}
+			continue
+		}
+
+		// Single-line comments
+		if strings.HasPrefix(line, "//") || (ext == ".py" && strings.HasPrefix(line, "#")) {
+			comments++
+			continue
+		}
+
+		// Inline comments after code
+		if isCommentAfterCode(line, ext) {
+			code++
+			comments++
+			continue
+		}
+
+		code++
+	}
+
+	return total, code, comments, blank
 }
