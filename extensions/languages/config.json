@@ -1,0 +1,57 @@
+{
+    ".go": {
+        "singleLineCommentToken": "//",
+        "doubleQuote": "\"",
+        "singleQuote": "'"
+    },
+    ".py": {
+        "singleLineCommentToken": "#",
+        "doubleQuote": "\"",
+        "singleQuote": "'"
+    },
+    ".js": {
+        "singleLineCommentToken": "//",
+        "doubleQuote": "\"",
+        "singleQuote": "'"
+    },
+    ".java": {
+        "singleLineCommentToken": "//",
+        "doubleQuote": "\"",
+        "singleQuote": "'"
+    },
+    ".c": {
+        "singleLineCommentToken": "//",
+        "doubleQuote": "\"",
+        "singleQuote": "'"
+    },
+    ".cpp": {
+        "singleLineCommentToken": "//",
+        "doubleQuote": "\"",
+        "singleQuote": "'"
+    },
+    ".h": {
+        "singleLineCommentToken": "//",
+        "doubleQuote": "\"",
+        "singleQuote": "'"
+    },
+    ".cs": {
+        "singleLineCommentToken": "//",
+        "doubleQuote": "\"",
+        "singleQuote": "'"
+    },
+    ".rb": {
+        "singleLineCommentToken": "#",
+        "doubleQuote": "\"",
+        "singleQuote": "'"
+    },
+    ".php": {
+        "singleLineCommentToken": "//",
+        "doubleQuote": "\"",
+        "singleQuote": "'"
+    },
+    ".ts": {
+        "singleLineCommentToken": "//",
+        "doubleQuote": "\"",
+        "singleQuote": "'"
+    }
+}

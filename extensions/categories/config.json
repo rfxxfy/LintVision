@@ -1,0 +1,34 @@
+{
+  "image": [
+    ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".svg", ".webp", ".ico"
+  ],
+  "video": [
+    ".mp4", ".mov", ".avi", ".mkv", ".flv", ".wmv", ".webm", ".mpeg", ".mpg"
+  ],
+  "audio": [
+    ".mp3", ".wav", ".flac", ".aac", ".ogg", ".wma", ".m4a", ".midi"
+  ],
+  "document": [
+    ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
+    ".txt", ".rtf", ".odt", ".ods", ".odp"
+  ],
+  "archive": [
+    ".zip", ".rar", ".7z", ".tar", ".gz", ".bz2", ".tgz", ".tar.gz", ".tar.bz2"
+  ],
+  "font": [
+    ".ttf", ".otf", ".woff", ".woff2", ".eot"
+  ],
+  "markup": [
+    ".html", ".htm", ".xml", ".json", ".yaml", ".yml", ".csv",
+    ".md", ".markdown", ".toml"
+  ],
+  "binary": [
+    ".exe", ".dll", ".so", ".dylib", ".bin", ".apk", ".deb", ".rpm", ".elf", ".a"
+  ],
+  "database": [
+    ".db", ".sqlite", ".sql"
+  ],
+  "model3d": [
+    ".obj", ".fbx", ".stl", ".dae", ".3ds", ".blend"
+  ]
+}
