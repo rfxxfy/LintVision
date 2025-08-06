@@ -26,6 +26,7 @@ func ScanDir(root string) ([]string, int, int, int, error) {
 		if d.IsDir() {
 			if isHidden {
 				hiddenDirs++
+				return fs.SkipDir
 			} else {
 				nonHiddenDirs++
 			}
