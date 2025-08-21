@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"strings"
+	//"strings"
 	"testing"
 
 	"github.com/rfxxfy/LintVision/metrics"
+	"github.com/stretchr/testify/assert"
 )
 
 // Вспомогательная функция для создания ProjectStats для тестов
@@ -30,6 +31,7 @@ func sampleStats() metrics.ProjectStats {
 }
 
 func TestPrintStats(t *testing.T) {
+	t.Parallel()
 	stats := sampleStats()
 
 	// Перехватываем stdout
@@ -46,62 +48,56 @@ func TestPrintStats(t *testing.T) {
 
 	// Проверяем, что вывод содержит json с нужными полями
 	out := buf.String()
-	if !strings.Contains(out, `"main.go"`) || !strings.Contains(out, `"LinesTotal": 10`) {
-		t.Errorf("PrintStats output = %q, want json with file info", out)
-	}
+	assert.Contains(t, out, `"main.go"`)
+	assert.Contains(t, out, `"lines_total": 10`)
+	// TODO: logging here
 }
 
 func TestSaveStats(t *testing.T) {
+	t.Parallel()
 	stats := sampleStats()
 	tmpDir := t.TempDir()
 	outFile := filepath.Join(tmpDir, "stats.json")
 
 	err := metrics.SaveStats(stats, outFile)
-	if err != nil {
-		t.Fatalf("SaveStats error: %v", err)
-	}
+	assert.NoError(t, err)
 
 	// Проверяем, что файл создан и содержит корректный json
 	data, err := os.ReadFile(outFile)
-	if err != nil {
-		t.Fatalf("cannot read output file: %v", err)
-	}
+	assert.NoError(t, err)
 	var got metrics.ProjectStats
-	if err := json.Unmarshal(data, &got); err != nil {
-		t.Fatalf("output is not valid json: %v", err)
-	}
-	if len(got.Files) != 1 || got.Files[0].Path != "main.go" {
-		t.Errorf("SaveStats output = %+v, want file info", got)
-	}
+	err = json.Unmarshal(data, &got)
+	assert.NoError(t, err)
+	assert.Len(t, got.Files, 1)
+	assert.Equal(t, "main.go", got.Files[0].Path)
+	// TODO: logging here
 }
 
 func TestSaveStats_Error(t *testing.T) {
+	t.Parallel()
 	stats := sampleStats()
 	// Пытаемся сохранить в несуществующую директорию
 	err := metrics.SaveStats(stats, "/nonexistent_dir/stats.json")
-	if err == nil {
-		t.Error("SaveStats should fail for invalid path")
-	}
+	assert.Error(t, err)
+	// TODO: logging here
 }
 
 func TestAnalyzeAndSave(t *testing.T) {
+	t.Parallel()
 	// Создаём временную директорию с одним файлом
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "main.go")
-	os.WriteFile(filePath, []byte("package main\n"), 0644)
+	err := os.WriteFile(filePath, []byte("package main\n"), 0644)
+	assert.NoError(t, err)
 
 	outFile := filepath.Join(tmpDir, "out.json")
 
 	// AnalyzeAndSave должен вернуть ProjectStats и создать файл
 	stats, err := metrics.AnalyzeAndSave(tmpDir, outFile)
-	if err != nil {
-		t.Fatalf("AnalyzeAndSave error: %v", err)
-	}
-	if len(stats.Files) == 0 {
-		t.Error("AnalyzeAndSave: no files found")
-	}
+	assert.NoError(t, err)
+	assert.NotEmpty(t, stats.Files)
 	// Проверяем, что файл создан
-	if _, err := os.Stat(outFile); err != nil {
-		t.Errorf("AnalyzeAndSave: output file not created: %v", err)
-	}
+	_, err = os.Stat(outFile)
+	assert.NoError(t, err)
+	// TODO: logging here
 }

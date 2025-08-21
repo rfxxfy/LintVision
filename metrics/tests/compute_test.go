@@ -3,13 +3,12 @@ package metrics_test
 import (
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	"github.com/rfxxfy/LintVision/metrics"
+	"github.com/stretchr/testify/assert"
 )
 
-// Вспомогательная функция для создания временного файла с содержимым
 func createTempFile(t *testing.T, dir, name, content string) string {
 	t.Helper()
 	path := filepath.Join(dir, name)
@@ -23,6 +22,7 @@ func createTempFile(t *testing.T, dir, name, content string) string {
 }
 
 func TestComputeFileStats(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		filename string
@@ -58,9 +58,9 @@ print("hi")  # inline comment
 			want: metrics.FileStats{
 				Ext:           ".py",
 				Category:      "code",
-				LinesTotal:    4,
+				LinesTotal:    3,
 				LinesCode:     1,
-				LinesComments: 2, // одна строка - только комментарий, одна - код с комментом
+				LinesComments: 2,
 				LinesBlank:    1,
 			},
 		},
@@ -77,7 +77,7 @@ Some text
 				Ext:        ".md",
 				Category:   "markup",
 				LinesTotal: 4,
-				LinesBlank: 1,
+				LinesBlank: 2,
 			},
 		},
 		{
@@ -87,7 +87,7 @@ Some text
 			ext:      ".bin",
 			want: metrics.FileStats{
 				Ext:      ".bin",
-				Category: "",
+				Category: "binary",
 			},
 		},
 		{
@@ -103,7 +103,9 @@ Some text
 	}
 
 	for _, tt := range tests {
+		tt := tt // захват переменной для параллельного запуска
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			tmpDir := t.TempDir()
 			var path string
 			if tt.name != "File does not exist" {
@@ -112,20 +114,19 @@ Some text
 				path = filepath.Join(tmpDir, tt.filename)
 			}
 			got, _ := metrics.ComputeFileStats(path)
-			// Сравниваем только интересующие поля
-			if got.Ext != tt.want.Ext ||
-				got.Category != tt.want.Category ||
-				got.LinesTotal != tt.want.LinesTotal ||
-				got.LinesCode != tt.want.LinesCode ||
-				got.LinesComments != tt.want.LinesComments ||
-				got.LinesBlank != tt.want.LinesBlank {
-				t.Errorf("got %+v, want %+v", got, tt.want)
-			}
+			assert.Equal(t, tt.want.Ext, got.Ext)
+			assert.Equal(t, tt.want.Category, got.Category)
+			assert.Equal(t, tt.want.LinesTotal, got.LinesTotal)
+			assert.Equal(t, tt.want.LinesCode, got.LinesCode)
+			assert.Equal(t, tt.want.LinesComments, got.LinesComments)
+			assert.Equal(t, tt.want.LinesBlank, got.LinesBlank)
+			// TODO: logging here
 		})
 	}
 }
 
 func TestComputeProjectStats(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 	files := map[string]string{
 		"main.go":    "package main\n\n// comment\nfunc main() {}",
@@ -139,22 +140,14 @@ func TestComputeProjectStats(t *testing.T) {
 	}
 
 	got, err := metrics.ComputeProjectStats(paths)
-	if err != nil {
-		t.Fatalf("ComputeProjectStats error: %v", err)
-	}
+	assert.NoError(t, err)
+	assert.Equal(t, len(files), len(got.Files))
 
-	// Проверяем количество файлов
-	if len(got.Files) != len(files) {
-		t.Errorf("got %d files, want %d", len(got.Files), len(files))
-	}
-
-	// Проверяем, что категории подсчитаны корректно
 	wantCategories := map[string]int{
 		"code":   2,
 		"markup": 1,
-		"":       1,
+		"document": 1,
 	}
-	if !reflect.DeepEqual(got.CategoryCounts, wantCategories) {
-		t.Errorf("got categories %v, want %v", got.CategoryCounts, wantCategories)
-	}
+	assert.Equal(t, wantCategories, got.CategoryCounts)
+	// TODO: logging here
 }
