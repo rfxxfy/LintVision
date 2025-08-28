@@ -32,7 +32,7 @@ func IsCommentAfterCode(line, ext string) bool {
 	if !ok {
 		return false
 	}
-	token := cfg.SingleLineComment
+	token := cfg.SingleLineCommentToken
 	idx := strings.Index(line, token)
 	if idx <= 0 {
 		return false

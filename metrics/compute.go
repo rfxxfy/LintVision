@@ -36,12 +36,13 @@ func ComputeFileStats(path string) (FileStats, error) {
 		switch cat {
 		case "code":
 			cfg, _ := extensions.GetLanguageConfig(ext)
+			token := cfg.SingleLineCommentToken
 			switch {
 			case trimmed == "":
 				fs.LinesBlank++
-			case strings.HasPrefix(trimmed, cfg.SingleLineComment):
+			case token != "" && strings.HasPrefix(trimmed, token):
 				fs.LinesComments++
-			case extensions.IsCommentAfterCode(line, ext):
+			case token != "" && extensions.IsCommentAfterCode(line, ext):
 				fs.LinesComments++
 				fs.LinesCode++
 			default:
