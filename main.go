@@ -1,35 +1,26 @@
-// main.go
 package main
 
 import (
 	"flag"
 	"fmt"
 	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/rfxxfy/LintVision/logging"
-	"github.com/rfxxfy/LintVision/metrics"
+	"github.com/rfxxfy/LintVision/stats"
 )
 
-func expandPath(path string) (string, error) {
-	if strings.HasPrefix(path, "~/") {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return "", err
-		}
-		path = filepath.Join(home, path[2:])
-	}
-	path = os.ExpandEnv(path)
-
-	return path, nil
-}
-
 func main() {
+	guiMode := flag.Bool("gui", false, "Запустить в GUI режиме")
 	dir := flag.String("path", ".", "директория для анализа")
 	logCfg := flag.String("log-config", "", "конфиг логгера")
 	out := flag.String("out", "", "файл для сохранения результата JSON")
 	flag.Parse()
+
+	if *guiMode {
+		gui := NewLintVisionGUI()
+		gui.Run()
+		return
+	}
 
 	if *logCfg != "" {
 		if err := logging.LoadConfig(*logCfg); err != nil {
@@ -38,7 +29,7 @@ func main() {
 		}
 	}
 
-	if _, err := metrics.AnalyzeAndSave(*dir, *out); err != nil {
+	if _, err := stats.AnalyzeAndSave(*dir, *out); err != nil {
 		logging.Fatal("analysis failed: %v", err)
 	}
 }

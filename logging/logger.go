@@ -26,10 +26,8 @@ type Logger struct {
 	caller     bool
 }
 
-// std — глобальный логгер
 var std = New(os.Stdout, INFO)
 
-// New создает новый Logger, по умолчанию в text-формате и без caller.
 func New(out io.Writer, lvl Level) *Logger {
 	return &Logger{
 		out:        out,
@@ -40,22 +38,18 @@ func New(out io.Writer, lvl Level) *Logger {
 	}
 }
 
-// SetOutput задаёт writer для std-логгера.
 func SetOutput(out io.Writer) {
 	std.SetOutput(out)
 }
 
-// SetLevel задаёт минимальный уровень для std-логгера.
 func SetLevel(lvl Level) {
 	std.SetLevel(lvl)
 }
 
-// SetFormat задаёт формат (TextFormat или JSONFormat) для std-логгера.
 func SetFormat(fmtOut outputFormat) {
 	std.SetFormat(fmtOut)
 }
 
-// SetCaller включает или выключает вывод информации о caller (файл:строка).
 func SetCaller(on bool) {
 	std.SetCaller(on)
 }

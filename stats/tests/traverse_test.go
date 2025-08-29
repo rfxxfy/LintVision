@@ -1,11 +1,11 @@
-package metrics_test
+package stats_test
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/rfxxfy/LintVision/metrics"
+	"github.com/rfxxfy/LintVision/stats"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,12 +26,12 @@ func createTestTree(t *testing.T, root string, files map[string]string) {
 func TestScanDir(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name         string
-		files        map[string]string
-		wantFiles    []string // относительные пути
-		wantHiddenF  int
-		wantHiddenD  int
-		wantNonHidD  int
+		name        string
+		files       map[string]string
+		wantFiles   []string // относительные пути
+		wantHiddenF int
+		wantHiddenD int
+		wantNonHidD int
 	}{
 		{
 			name: "simple structure",
@@ -49,10 +49,10 @@ func TestScanDir(t *testing.T) {
 		{
 			name: "nested hidden dir",
 			files: map[string]string{
-				"main.go":                 "package main",
-				"dir/.hiddendir/a.go":     "package a",
-				"dir/visible/b.py":        "print('b')",
-				"dir/visible/.c.py":       "print('c')",
+				"main.go":             "package main",
+				"dir/.hiddendir/a.go": "package a",
+				"dir/visible/b.py":    "print('b')",
+				"dir/visible/.c.py":   "print('c')",
 			},
 			wantFiles:   []string{"main.go", "dir/.hiddendir/a.go", "dir/visible/b.py", "dir/visible/.c.py"},
 			wantHiddenF: 1, // .c.py
@@ -70,8 +70,8 @@ func TestScanDir(t *testing.T) {
 			wantNonHidD: 1,
 		},
 		{
-			name: "empty dir",
-			files: map[string]string{},
+			name:        "empty dir",
+			files:       map[string]string{},
 			wantFiles:   []string{},
 			wantHiddenF: 0,
 			wantHiddenD: 0,
@@ -80,16 +80,14 @@ func TestScanDir(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt // захват переменной для параллельного запуска
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			tmpDir := t.TempDir()
 			createTestTree(t, tmpDir, tt.files)
 
-			gotFiles, gotHiddenF, gotHiddenD, gotNonHidD, err := metrics.ScanDir(tmpDir)
+			gotFiles, gotHiddenF, gotHiddenD, gotNonHidD, err := stats.ScanDir(tmpDir)
 			assert.NoError(t, err)
 
-			// Приводим к относительным путям
 			for i, path := range gotFiles {
 				rel, _ := filepath.Rel(tmpDir, path)
 				gotFiles[i] = rel
@@ -99,33 +97,29 @@ func TestScanDir(t *testing.T) {
 			assert.Equal(t, tt.wantHiddenF, gotHiddenF, "hidden files mismatch")
 			assert.Equal(t, tt.wantHiddenD, gotHiddenD, "hidden dirs mismatch")
 			assert.Equal(t, tt.wantNonHidD, gotNonHidD, "non-hidden dirs mismatch")
-			// TODO: logging here
 		})
 	}
 }
 
 func TestScanDir_Error(t *testing.T) {
 	t.Parallel()
-	// Передаём несуществующую директорию
-	_, _, _, _, err := metrics.ScanDir("/nonexistent_dir_12345")
+	_, _, _, _, err := stats.ScanDir("/nonexistent_dir_12345")
 	assert.Error(t, err)
-	// TODO: logging here
 }
 
 func TestComputeProjectStatsFromDir(t *testing.T) {
 	t.Parallel()
 	tmpDir := t.TempDir()
 	files := map[string]string{
-		"main.go":     "package main",
-		".hidden.py":  "# hidden",
-		"dir/a.py":    "print('a')",
+		"main.go":    "package main",
+		".hidden.py": "# hidden",
+		"dir/a.py":   "print('a')",
 	}
 	createTestTree(t, tmpDir, files)
 
-	ps, err := metrics.ComputeProjectStatsFromDir(tmpDir)
+	ps, err := stats.ComputeProjectStatsFromDir(tmpDir)
 	assert.NoError(t, err)
 	assert.Len(t, ps.Files, 3)
 	assert.Equal(t, 1, ps.HiddenFiles)
 	assert.Equal(t, 2, ps.NonHiddenDirs)
-	// TODO: logging here
 }

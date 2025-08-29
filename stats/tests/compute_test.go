@@ -1,11 +1,11 @@
-package metrics_test
+package stats_test
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/rfxxfy/LintVision/metrics"
+	"github.com/rfxxfy/LintVision/stats"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,7 +28,7 @@ func TestComputeFileStats(t *testing.T) {
 		filename string
 		content  string
 		ext      string
-		want     metrics.FileStats
+		want     stats.FileStats
 	}{
 		{
 			name:     "Go file with code, comment, blank",
@@ -38,7 +38,7 @@ func TestComputeFileStats(t *testing.T) {
 // This is a comment
 func main() {}`,
 			ext: ".go",
-			want: metrics.FileStats{
+			want: stats.FileStats{
 				Ext:           ".go",
 				Category:      "code",
 				LinesTotal:    4,
@@ -55,7 +55,7 @@ func main() {}`,
 print("hi")  # inline comment
 `,
 			ext: ".py",
-			want: metrics.FileStats{
+			want: stats.FileStats{
 				Ext:           ".py",
 				Category:      "code",
 				LinesTotal:    3,
@@ -73,7 +73,7 @@ print("hi")  # inline comment
 Some text
 `,
 			ext: ".md",
-			want: metrics.FileStats{
+			want: stats.FileStats{
 				Ext:        ".md",
 				Category:   "markup",
 				LinesTotal: 4,
@@ -85,7 +85,7 @@ Some text
 			filename: "data.bin",
 			content:  "some data\n",
 			ext:      ".bin",
-			want: metrics.FileStats{
+			want: stats.FileStats{
 				Ext:      ".bin",
 				Category: "binary",
 			},
@@ -95,7 +95,7 @@ Some text
 			filename: "nofile.go",
 			content:  "",
 			ext:      ".go",
-			want: metrics.FileStats{
+			want: stats.FileStats{
 				Ext:      ".go",
 				Category: "code",
 			},
@@ -103,7 +103,6 @@ Some text
 	}
 
 	for _, tt := range tests {
-		tt := tt // захват переменной для параллельного запуска
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			tmpDir := t.TempDir()
@@ -113,14 +112,13 @@ Some text
 			} else {
 				path = filepath.Join(tmpDir, tt.filename)
 			}
-			got, _ := metrics.ComputeFileStats(path)
+			got, _ := stats.ComputeFileStats(path)
 			assert.Equal(t, tt.want.Ext, got.Ext)
 			assert.Equal(t, tt.want.Category, got.Category)
 			assert.Equal(t, tt.want.LinesTotal, got.LinesTotal)
 			assert.Equal(t, tt.want.LinesCode, got.LinesCode)
 			assert.Equal(t, tt.want.LinesComments, got.LinesComments)
 			assert.Equal(t, tt.want.LinesBlank, got.LinesBlank)
-			// TODO: logging here
 		})
 	}
 }
@@ -129,25 +127,24 @@ func TestComputeProjectStats(t *testing.T) {
 	t.Parallel()
 	tmpDir := t.TempDir()
 	files := map[string]string{
-		"main.go":    "package main\n\n// comment\nfunc main() {}",
-		"script.py":  "# comment\nprint('hi')\n",
-		"README.md":  "# Title\n\nSome text\n",
-		"empty.txt":  "",
+		"main.go":   "package main\n\n// comment\nfunc main() {}",
+		"script.py": "# comment\nprint('hi')\n",
+		"README.md": "# Title\n\nSome text\n",
+		"empty.txt": "",
 	}
 	var paths []string
 	for name, content := range files {
 		paths = append(paths, createTempFile(t, tmpDir, name, content))
 	}
 
-	got, err := metrics.ComputeProjectStats(paths)
+	got, err := stats.ComputeProjectStats(paths)
 	assert.NoError(t, err)
 	assert.Equal(t, len(files), len(got.Files))
 
 	wantCategories := map[string]int{
-		"code":   2,
-		"markup": 1,
+		"code":     2,
+		"markup":   1,
 		"document": 1,
 	}
 	assert.Equal(t, wantCategories, got.CategoryCounts)
-	// TODO: logging here
 }

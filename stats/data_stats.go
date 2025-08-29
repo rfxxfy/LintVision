@@ -1,4 +1,4 @@
-package metrics
+package stats
 
 type FileStats struct {
 	Path          string `json:"path,omitempty"`
