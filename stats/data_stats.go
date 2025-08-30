@@ -8,6 +8,7 @@ type FileStats struct {
 	LinesCode     int    `json:"lines_code"`
 	LinesComments int    `json:"lines_comments"`
 	LinesBlank    int    `json:"lines_blank"`
+	Hash          string `json:"hash,omitempty"`
 }
 
 type ProjectStats struct {

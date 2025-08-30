@@ -15,6 +15,14 @@ func ComputeFileStats(path string) (FileStats, error) {
 	cat := extensions.GetFileCategory(ext)
 
 	fs := FileStats{Path: path, Ext: ext, Category: cat}
+
+	if h, err := ComputeFileHash(path); err != nil {
+		logging.Error("ComputeFileStats: cannot hash %s: %v", path, err)
+		return fs, err
+	} else {
+		fs.Hash = h
+	}
+
 	if cat != "code" && cat != "markup" {
 		return fs, nil
 	}
