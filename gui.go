@@ -44,7 +44,6 @@ func NewLintVisionGUI() *LintVisionGUI {
 }
 
 func (g *LintVisionGUI) setupUI() {
-	// Создаем элементы интерфейса
 	g.pathEntry = widget.NewEntry()
 	g.pathEntry.SetPlaceHolder("Путь к директории для анализа (например: . или ~/projects)")
 	g.pathEntry.SetText(".")
@@ -68,7 +67,6 @@ func (g *LintVisionGUI) setupUI() {
 	g.resultText.SetPlaceHolder("Результаты анализа появятся здесь...")
 	g.resultText.Disable()
 
-	// Кнопки
 	selectPathBtn := widget.NewButton("Выбрать директорию", g.selectDirectory)
 	analyzeGitHubBtn := widget.NewButton("Анализ GitHub", g.runGitHubAnalysis)
 	selectOutputBtn := widget.NewButton("Выбрать файл вывода", g.selectOutputFile)
@@ -76,7 +74,6 @@ func (g *LintVisionGUI) setupUI() {
 	analyzeBtn := widget.NewButton("Запустить анализ", g.runAnalysis)
 	cancelBtn := widget.NewButton("Отменить", g.cancelAnalysis)
 
-	// Компоновка
 	pathContainer := container.NewBorder(nil, nil, widget.NewLabel("Директория:"), selectPathBtn, g.pathEntry)
 	urlContainer := container.NewBorder(nil, nil, widget.NewLabel("GitHub URL:"), analyzeGitHubBtn, g.urlEntry)
 	outputContainer := container.NewBorder(nil, nil, widget.NewLabel("Файл вывода:"), selectOutputBtn, g.outputEntry)
@@ -148,13 +145,11 @@ func (g *LintVisionGUI) selectLogConfig() {
 }
 
 func (g *LintVisionGUI) runAnalysis() {
-	// Проверяем, не выполняется ли уже анализ
 	if g.isAnalyzing {
 		dialog.ShowError(fmt.Errorf("Анализ уже выполняется. Дождитесь завершения."), g.mainWindow)
 		return
 	}
 
-	// Автоматически очищаем предыдущие результаты
 	g.resultText.SetText("")
 	g.statusLabel.SetText("Подготовка к анализу...")
 
@@ -167,7 +162,6 @@ func (g *LintVisionGUI) runAnalysis() {
 		return
 	}
 
-	// Расширяем путь
 	expandedPath, err := g.expandPath(path)
 	if err != nil {
 		dialog.ShowError(fmt.Errorf("Ошибка в пути: %v", err), g.mainWindow)
@@ -179,10 +173,9 @@ func (g *LintVisionGUI) runAnalysis() {
 	g.progressBar.SetValue(0.1)
 	g.statusLabel.SetText("Загрузка конфигурации логгера...")
 
-	// Загружаем конфиг логгера если указан
 	if logConfig != "" {
 		if err := logging.LoadConfig(logConfig); err != nil {
-			dialog.ShowError(fmt.Errorf("Ошибка загрузки конфига логгера: %v", err), g.mainWindow)
+			dialog.ShowError(fmt.Errorf("ошибка загрузки конфига логгера: %v", err), g.mainWindow)
 			g.progressBar.Hide()
 			g.statusLabel.SetText("Ошибка загрузки конфига")
 			return
@@ -192,11 +185,9 @@ func (g *LintVisionGUI) runAnalysis() {
 	g.progressBar.SetValue(0.3)
 	g.statusLabel.SetText("Запуск анализа...")
 
-	// Создаем контекст с возможностью отмены
 	ctx, cancel := context.WithCancel(context.Background())
 	g.cancelFunc = cancel
 
-	// Запускаем анализ в горутине
 	go func() {
 		defer func() {
 			g.isAnalyzing = false
@@ -206,7 +197,6 @@ func (g *LintVisionGUI) runAnalysis() {
 		g.progressBar.SetValue(0.5)
 		g.statusLabel.SetText("Анализируем код...")
 
-		// Проверяем отмену
 		select {
 		case <-ctx.Done():
 			return
@@ -221,7 +211,6 @@ func (g *LintVisionGUI) runAnalysis() {
 			return
 		}
 
-		// Проверяем отмену перед финальным обновлением
 		select {
 		case <-ctx.Done():
 			return
@@ -231,7 +220,6 @@ func (g *LintVisionGUI) runAnalysis() {
 		g.progressBar.SetValue(1.0)
 		g.statusLabel.SetText("Анализ завершен успешно!")
 
-		// Показываем результаты
 		resultText := g.formatResults(result, output)
 		g.resultText.SetText(resultText)
 
@@ -257,7 +245,6 @@ func (g *LintVisionGUI) expandPath(path string) (string, error) {
 		path = filepath.Join(home, path[2:])
 	}
 
-	// Расширяем переменные окружения
 	path = os.ExpandEnv(path)
 	return path, nil
 }
@@ -271,21 +258,18 @@ func (g *LintVisionGUI) formatResults(stats stats.ProjectStats, outputPath strin
 		result.WriteString(fmt.Sprintf("Результаты сохранены в: %s\n\n", outputPath))
 	}
 
-	// Общая статистика
 	result.WriteString("=== ОБЩАЯ СТАТИСТИКА ===\n")
 	result.WriteString(fmt.Sprintf("Всего файлов: %d\n", len(stats.Files)))
 	result.WriteString(fmt.Sprintf("Скрытых файлов: %d\n", stats.HiddenFiles))
 	result.WriteString(fmt.Sprintf("Скрытых директорий: %d\n", stats.HiddenDirs))
 	result.WriteString(fmt.Sprintf("Нескрытых директорий: %d\n\n", stats.NonHiddenDirs))
 
-	// Статистика по категориям
 	result.WriteString("=== СТАТИСТИКА ПО КАТЕГОРИЯМ ===\n")
 	for category, count := range stats.CategoryCounts {
 		result.WriteString(fmt.Sprintf("%s: %d файлов\n", category, count))
 	}
 	result.WriteString("\n")
 
-	// Детальная статистика по файлам - ПОКАЗЫВАЕМ ВСЕ ФАЙЛЫ!
 	if len(stats.Files) > 0 {
 		result.WriteString("=== ДЕТАЛЬНАЯ СТАТИСТИКА ===\n")
 		for _, file := range stats.Files {
@@ -301,40 +285,50 @@ func (g *LintVisionGUI) formatResults(stats stats.ProjectStats, outputPath strin
 }
 
 func (g *LintVisionGUI) runGitHubAnalysis() {
-	// Проверяем, не выполняется ли уже анализ
 	if g.isAnalyzing {
 		dialog.ShowError(fmt.Errorf("Анализ уже выполняется. Дождитесь завершения."), g.mainWindow)
 		return
 	}
 
-	// Автоматически очищаем предыдущие результаты
 	g.resultText.SetText("")
-	g.statusLabel.SetText("Подготовка к анализу GitHub репозитория...")
+	g.statusLabel.SetText("Валидация GitHub URL...")
 
 	url := g.urlEntry.Text
 	output := g.outputEntry.Text
 	logConfig := g.logConfigEntry.Text
 
 	if url == "" {
-		dialog.ShowError(fmt.Errorf("Укажите GitHub URL репозитория"), g.mainWindow)
+		dialog.ShowError(fmt.Errorf("укажите GitHub URL репозитория"), g.mainWindow)
 		return
 	}
 
-	// Проверяем, что это GitHub URL
-	if !strings.Contains(url, "github.com") {
-		dialog.ShowError(fmt.Errorf("Укажите корректный GitHub URL (например: https://github.com/user/repo)"), g.mainWindow)
+	validationResult := parseurl.ValidateGitHubURL(url)
+	if !validationResult.IsValid {
+		var errorMsg strings.Builder
+		errorMsg.WriteString(fmt.Sprintf("❌ %s\n\n", validationResult.Error))
+		errorMsg.WriteString(fmt.Sprintf("URL: %s\n\n", url))
+
+		if len(validationResult.Suggestions) > 0 {
+			errorMsg.WriteString("💡 Предложения по исправлению:\n")
+			for i, suggestion := range validationResult.Suggestions {
+				errorMsg.WriteString(fmt.Sprintf("%d. %s\n", i+1, suggestion))
+			}
+		}
+
+		dialog.ShowError(fmt.Errorf("%s", errorMsg.String()), g.mainWindow)
 		return
 	}
+
+	g.statusLabel.SetText("GitHub URL валиден. Подготовка к анализу...")
 
 	g.isAnalyzing = true
 	g.progressBar.Show()
 	g.progressBar.SetValue(0.1)
 	g.statusLabel.SetText("Загрузка конфигурации логгера...")
 
-	// Загружаем конфиг логгера если указан
 	if logConfig != "" {
 		if err := logging.LoadConfig(logConfig); err != nil {
-			dialog.ShowError(fmt.Errorf("Ошибка загрузки конфига логгера: %v", err), g.mainWindow)
+			dialog.ShowError(fmt.Errorf("ошибка загрузки конфига логгера: %v", err), g.mainWindow)
 			g.progressBar.Hide()
 			g.statusLabel.SetText("Ошибка загрузки конфига")
 			return
@@ -344,11 +338,9 @@ func (g *LintVisionGUI) runGitHubAnalysis() {
 	g.progressBar.SetValue(0.2)
 	g.statusLabel.SetText("Клонирование репозитория...")
 
-	// Создаем контекст с возможностью отмены
 	ctx, cancel := context.WithCancel(context.Background())
 	g.cancelFunc = cancel
 
-	// Запускаем анализ GitHub репозитория в горутине
 	go func() {
 		defer func() {
 			g.isAnalyzing = false
@@ -358,7 +350,6 @@ func (g *LintVisionGUI) runGitHubAnalysis() {
 		g.progressBar.SetValue(0.4)
 		g.statusLabel.SetText("Анализируем GitHub репозитория...")
 
-		// Проверяем отмену
 		select {
 		case <-ctx.Done():
 			return
@@ -370,7 +361,6 @@ func (g *LintVisionGUI) runGitHubAnalysis() {
 			g.progressBar.Hide()
 			g.statusLabel.SetText("Ошибка анализа GitHub репозитория")
 
-			// Показываем более понятное сообщение об ошибке
 			errorMsg := err.Error()
 			if strings.Contains(errorMsg, "репозиторий не найден") {
 				dialog.ShowError(fmt.Errorf("❌ Репозиторий не найден!\n\nURL: %s\n\nВозможные причины:\n• Репозиторий не существует\n• Опечатка в названии\n• Репозиторий был удален", url), g.mainWindow)
@@ -386,7 +376,6 @@ func (g *LintVisionGUI) runGitHubAnalysis() {
 			return
 		}
 
-		// Проверяем отмену перед сохранением
 		select {
 		case <-ctx.Done():
 			return
@@ -396,14 +385,12 @@ func (g *LintVisionGUI) runGitHubAnalysis() {
 		g.progressBar.SetValue(0.8)
 		g.statusLabel.SetText("Сохранение результатов...")
 
-		// Сохраняем результаты если указан путь
 		if output != "" {
 			if err := stats.SaveStats(result, output); err != nil {
 				dialog.ShowError(fmt.Errorf("Ошибка сохранения результатов: %v", err), g.mainWindow)
 			}
 		}
 
-		// Проверяем отмену перед финальным обновлением
 		select {
 		case <-ctx.Done():
 			return
@@ -413,7 +400,6 @@ func (g *LintVisionGUI) runGitHubAnalysis() {
 		g.progressBar.SetValue(1.0)
 		g.statusLabel.SetText("Анализ GitHub репозитория завершен успешно!")
 
-		// Показываем результаты
 		resultText := g.formatResults(result, output)
 		g.resultText.SetText(resultText)
 
